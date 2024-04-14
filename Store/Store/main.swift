@@ -1,10 +1,3 @@
-//
-//  main.swift
-//  Store
-//
-//  Created by Ted Neward on 2/29/24.
-//
-
 import Foundation
 
 protocol SKU {}
