@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Store
 
 final class StoreTests: XCTestCase {
 
