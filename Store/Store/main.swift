@@ -9,7 +9,7 @@ protocol PricingScheme {
     func applyScheme(to receipt: Receipt)
 }
 
-class Item: SKU, Hashable {
+class Item: SKU {
     var name: String
     private var priceEach: Int
     
@@ -21,21 +21,11 @@ class Item: SKU, Hashable {
     func price() -> Int {
         return priceEach
     }
-    
-    // Make Item hashable by providing a hash function
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(name)
-        hasher.combine(priceEach)
-    }
-    
-    static func == (lhs: Item, rhs: Item) -> Bool {
-        return lhs.name == rhs.name && lhs.priceEach == rhs.priceEach
-    }
 }
 
 class Receipt {
     private var receiptItems: [SKU] = []
-    private var discount: Int = 0
+    var discount: Int = 0
     
     func items() -> [SKU] {
         return receiptItems
@@ -88,10 +78,7 @@ class Receipt {
 class Register {
     private var receipt: Receipt
     private let beanPricingScheme: TwoForOnePricing = TwoForOnePricing("Beans (8oz Can)")
-    private let ketchupAndBeerPricingScheme: GroupedPricing = GroupedPricing(Set([
-        Item(name: "Beer (12oz Bottle)", priceEach: 157),
-        Item(name: "Ketchup (20oz Bottle)", priceEach: 230)
-    ]), 10)
+    private let ketchupAndBeerPricingScheme: GroupedPricing = GroupedPricing(Set(["Beer", "Ketchup"]), 10)
     
     init() {
         self.receipt = Receipt()
@@ -161,10 +148,10 @@ class TwoForOnePricing: PricingScheme {
 }
 
 class GroupedPricing: PricingScheme {
-    private let discountItemGroup: Set<Item>
+    private let discountItemGroup: Set<String>
     private let discountRate: Int
     
-    init(_ discountItemGroup: Set<Item>, _ discountRate: Int) {
+    init(_ discountItemGroup: Set<String>, _ discountRate: Int) {
         self.discountItemGroup = discountItemGroup
         self.discountRate = discountRate
     }
@@ -172,49 +159,21 @@ class GroupedPricing: PricingScheme {
     func applyScheme(to receipt: Receipt) {
         var discountItems: [Item] = []
         
-//        receipt.items().forEach { item in
-//            if let indexOfParenChar = item.name.firstIndex(of: "(") {
-//                let range = item.name.startIndex...indexOfParenChar
-//                let itemWithNewName = String(item.name[range]).trimmingCharacters(in: .whitespaces)
-//
-//                discountItems.append(itemWithNewName)
-//            }
-//            
-//            if let indexOfParenChar = item.name.firstIndex(of: "(") {
-//                let range = item.name.startIndex..<indexOfParenChar
-//                let itemSubstring = String(item.name[range]).trimmingCharacters(in: .whitespaces)
-//                let itemMatch = Item(name: itemSubstring, priceEach: item.price())
-//                
-//                if discountItemGroup.contains(itemMatch) {
-//                    discountItems.append(item as! Item)
-//                }
-//            }
-//        }
-        
-        
-        
-        discountItems = discountItems.filter { itemName in
-            discountItemGroup.contains(itemName)
+        for sku in receipt.items() {
+            let item = sku as! Item
+            
+            let itemName = item.name.components(separatedBy: " (")[0]
+            if discountItemGroup.contains(itemName) {
+                discountItems.append(item)
+            }
         }
         
-        var itemCount: [Item : Int] = [:]
-        
-        for item in discountItems {
-            itemCount[item, default: 0] += 1
-        }
-        
-        let minOccurence = itemCount.values.min() ?? 0
-        
-        let sum = discountItemGroup.reduce(0, { total, item in
-            total + item.price()
-        })
-        
-        if minOccurence > 0 {
-            let discount = sum * discountRate / 100
-            receipt.applyDiscount(discount)
+        if discountItems.count == discountItemGroup.count {
+            for item in discountItems {
+                let itemDiscount = item.price() * discountRate / 100
+                receipt.applyDiscount(itemDiscount)
+            }
         }
     }
-    
-    
 }
 
