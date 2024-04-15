@@ -104,4 +104,22 @@ TOTAL: $2.98
         XCTAssertEqual(expectedReceipt, receipt.output())
         XCTAssertEqual(298, receipt.total())
     }
+    
+    func testGroupDiscountForKetchupAndBeer() {
+        register.clear()
+        register.scan(Item(name: "Ketchup (20oz Bottle)", priceEach: 230))
+        register.scan(Item(name: "Beer (12oz Bottle)", priceEach: 157))  // total 387
+        var receipt = register.getReceipt()
+        var expectedReceipt = """
+Receipt:
+Ketchup (20oz Bottle): $2.30
+Beer (12oz Bottle): $1.57
+------------------
+DISCOUNT: -$0.39
+------------------
+TOTAL: $3.48
+"""
+        XCTAssertEqual(expectedReceipt, receipt.output())
+        XCTAssertEqual(348, register.subtotal())
+    }
 }
